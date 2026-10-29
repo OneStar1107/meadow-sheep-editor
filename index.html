@@ -917,7 +917,7 @@ const roadCtrl = [
   roadMeshes.push(ribbon(pts, 1.2, { color: 0xE6CE9B, lift: 0.022, order: 2, masked: true }));
 }
 
-let fieldMesh = null, fieldMat = null, riceMat = null;
+let fieldMesh = null, fieldMat = null, riceMat = null, snowTips = null, snowTipMat = null;
 {
   const x0 = 5.2, x1 = 20.4, z0 = 1.2, z1 = 12.9;
   const poly = [[6.2, 2.9], [10.4, 2.3], [15.8, 2.4], [18.9, 3.2], [19.4, 6.2], [18.8, 9.3], [16.2, 11.3], [12.4, 11.9], [8.8, 11.3], [6.2, 8.9], [5.8, 5.6]];
@@ -1191,6 +1191,43 @@ let fieldMesh = null, fieldMat = null, riceMat = null;
   inst.castShadow = false;
   inst.receiveShadow = false;
   scene.add(inst);
+
+  /* white snow caps on the rice panicles, sharing the tuft transforms */
+  const tipGeo = new THREE.SphereGeometry(0.115, 8, 6);
+  tipGeo.scale(1, 0.48, 1);
+  tipGeo.translate(0, 0.80, 0);
+  snowTipMat = new THREE.MeshStandardMaterial({
+    color: 0xF4FAFF, roughness: 1, metalness: 0,
+    emissive: 0xAFC4D8, emissiveIntensity: 0.2,
+    transparent: true, opacity: 0, depthWrite: false,
+  });
+  snowTipMat.onBeforeCompile = shader => {
+    shader.uniforms.uTime = riceUniforms.uTime;
+    shader.uniforms.uWind = riceUniforms.uWind;
+    shader.uniforms.uWindStrength = riceUniforms.uWindStrength;
+    shader.vertexShader = 'uniform float uTime;\nuniform vec2 uWind;\nuniform float uWindStrength;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\n' +
+      '  float ph = instanceMatrix[3][0] * 0.7 + instanceMatrix[3][2] * 0.9;\n' +
+      '  float hh = clamp(position.y / 0.9, 0.0, 1.0);\n' +
+      '  float gustWave = sin(uTime * 2.0 - dot(instanceMatrix[3].xz, uWind) * 0.7 + ph * 0.25);\n' +
+      '  transformed.x += (sin(uTime * 1.7 + ph) * 0.03 + uWind.x * 0.15 * (0.35 + uWindStrength)) * hh;\n' +
+      '  transformed.z += (cos(uTime * 1.3 + ph) * 0.022 + uWind.y * 0.15 * (0.35 + uWindStrength)) * hh;'
+    );
+  };
+  const tipM = new THREE.Matrix4();
+  snowTips = new THREE.InstancedMesh(tipGeo, snowTipMat, inst.count);
+  for (let i = 0; i < inst.count; i++) {
+    inst.getMatrixAt(i, tipM);
+    snowTips.setMatrixAt(i, tipM);
+  }
+  snowTips.instanceMatrix.needsUpdate = true;
+  snowTips.count = inst.count;
+  snowTips.visible = false;
+  snowTips.castShadow = false;
+  snowTips.receiveShadow = false;
+  scene.add(snowTips);
 }
 
 /* ============================================================
@@ -1433,6 +1470,94 @@ snowPoints.frustumCulled = false;
 snowPoints.visible = false;
 scene.add(snowPoints);
 
+/* ---- field snow: a white layer that keeps the rice visible ---- */
+const fieldSnowMat = new THREE.MeshStandardMaterial({
+  map: fieldMesh.material.map, color: 0xFFFFFF, roughness: 0.9, metalness: 0,
+  emissive: 0xAFC4D8, emissiveIntensity: 0,
+  transparent: true, opacity: 0, depthWrite: false,
+});
+fieldSnowMat.onBeforeCompile = shader => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <map_fragment>',
+    '#include <map_fragment>\n  diffuseColor.rgb = vec3(1.0);'
+  );
+};
+const fieldSnow = new THREE.Mesh(fieldMesh.geometry, fieldSnowMat);
+fieldSnow.position.copy(fieldMesh.position);
+fieldSnow.position.y += 0.012;
+fieldSnow.renderOrder = 3;
+fieldSnow.receiveShadow = false;
+fieldSnow.visible = false;
+scene.add(fieldSnow);
+
+/* ---- hoof prints on snow / wet ground ---- */
+function makeFootprintTexture() {
+  const W = 128, H = 160;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = '#FFFFFF';
+  g.filter = 'blur(1.6px)';
+  g.globalAlpha = 0.32;
+  g.beginPath();
+  g.ellipse(64, 84, 60, 74, 0, 0, TAU);
+  g.fill();
+  g.globalAlpha = 1;
+  const toe = (cx, cy, rx, ry, rot) => {
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(rot);
+    g.beginPath();
+    g.ellipse(0, 0, rx, ry, 0, 0, TAU);
+    g.fill();
+    g.restore();
+  };
+  toe(32, 80, 32, 56, -0.16);
+  toe(96, 80, 32, 56, 0.16);
+  g.filter = 'none';
+  return new THREE.CanvasTexture(cv);
+}
+const footprintTex = makeFootprintTexture();
+const fpGeo = new THREE.PlaneGeometry(0.60, 0.80);
+const footprintPool = [];
+for (let i = 0; i < 320; i++) {
+  const m = new THREE.Mesh(fpGeo, new THREE.MeshBasicMaterial({
+    map: footprintTex, transparent: true, opacity: 0, depthWrite: false,
+    color: 0x7E93A8, side: THREE.DoubleSide,
+  }));
+  m.rotation.x = -Math.PI / 2;
+  m.visible = false;
+  m.renderOrder = 4;
+  m.userData.isFootprint = true;
+  scene.add(m);
+  footprintPool.push({ mesh: m, life: 0, max: 0, base: 0, snow: false });
+}
+let fpCursor = 0;
+function spawnFootprint(x, z, heading) {
+  const onSnow = snowAmount > 0.25;
+  if (!onSnow && wetness < 0.3) return;
+  const p = footprintPool[fpCursor++ % footprintPool.length];
+  p.mesh.position.set(x, terrainH(x, z) + (onSnow ? 0.036 : 0.030), z);
+  p.mesh.rotation.set(-Math.PI / 2, 0, heading - Math.PI / 2);
+  p.mesh.material.color.setHex(onSnow ? 0x4E6075 : 0x1F271A);
+  p.base = onSnow ? 0.72 : 0.62;
+  p.mesh.material.opacity = p.base;
+  p.mesh.visible = true;
+  p.life = p.max = onSnow ? 24 : 14;
+  p.snow = onSnow;
+}
+function updateFootprints(dt) {
+  for (const p of footprintPool) {
+    if (!p.mesh.visible) continue;
+    p.life -= dt;
+    if (p.snow && snowAmount < 0.12) p.life = Math.min(p.life, 0.4);
+    if (!p.snow && wetness < 0.08) p.life = Math.min(p.life, 0.4);
+    p.mesh.material.opacity = p.base * clamp(p.life / 3, 0, 1);
+    if (p.life <= 0) p.mesh.visible = false;
+  }
+}
+
 /* ============================================================
    8 · sheep
    ============================================================ */
@@ -1553,6 +1678,8 @@ function buildSheep() {
     tilt: 0,
     target: null,
     pop: 1,
+    stepDist: 0,
+    stepSide: 0,
   });
 
   return root;
@@ -1584,6 +1711,7 @@ function applyState(s, state) {
   u.state = state;
   u.t = 0;
   u.phase = 0;
+  u.stepDist = 0;
   if (state === 'walk') pickWalkTarget(s);
   else u.target = null;
 }
@@ -1600,6 +1728,8 @@ for (let i = 0; i < 11; i++) {
   const sp = SHEEP_SPOTS[i];
   const facing = i === 0 ? Math.atan2(-(34.5 - sp[1]), 0 - sp[0]) : rnd() * TAU;
   placeSheep(s, sp[0], sp[1], facing);
+  applyState(s, 'walk');
+  s.userData.next = 20 + Math.random() * 10;
 }
 
 /* ============================================================
@@ -1654,6 +1784,19 @@ function updateSheep(s, dt, now) {
           pickWalkTarget(s);
         } else {
           s.position.set(nx, terrainH(nx, nz), nz);
+          u.stepDist += 1.15 * dt;
+          if (u.stepDist > 0.6) {
+            u.stepDist = 0;
+            u.stepSide = u.stepSide ? 0 : 1;
+            const side = u.stepSide ? 1 : -1;
+            const hx = Math.cos(s.rotation.y), hz = -Math.sin(s.rotation.y);
+            const sx = -hz, sz = hx;
+            spawnFootprint(
+              s.position.x - hx * 0.16 + sx * 0.18 * side,
+              s.position.z - hz * 0.16 + sz * 0.18 * side,
+              s.rotation.y
+            );
+          }
           u.phase += dt * 8;
           bobY = Math.abs(Math.sin(u.phase)) * 0.028;
           const sw = Math.sin(u.phase) * 0.5;
@@ -1798,6 +1941,7 @@ function select(s) {
   selected = s;
   if (s) {
     s.userData.next = Infinity;
+    if (s.userData.state !== 'jump') applyState(s, 'walk');
     const st = s.userData.state;
     for (const b of document.querySelectorAll('.beh')) {
       b.classList.toggle('active', b.dataset.state === st);
@@ -2125,6 +2269,7 @@ function spawnSheepAt(x, z) {
   sh.userData.pop = 0.55;
   sh.scale.setScalar(SHEEP_SCALE * 0.55);
   placeSheep(sh, x, z, Math.random() * TAU);
+  applyState(sh, 'walk');
   sh.userData.next = Infinity;
   const add = () => { if (!sheepList.includes(sh)) sheepList.push(sh); scene.add(sh); };
   const remove = () => {
@@ -2486,20 +2631,26 @@ function updateTimeWeather(dt) {
   fieldMat.color.setRGB(1 - 0.28 * wet, 1 - 0.28 * wet, 1 - 0.2 * wet);
   fieldMat.emissive.setHex(0xE8F2FA);
   const snowLit = 0.35 + 0.65 * sunUp;
-  fieldMat.emissiveIntensity = snowMix * 0.55 * snowLit;
+  fieldMat.emissiveIntensity = snowMix * 0.08 * snowLit;
   riceMat.color.setRGB(1 - 0.28 * wet, 1 - 0.28 * wet, 1 - 0.2 * wet);
   riceMat.emissive.setHex(0xDDEBF6);
-  riceMat.emissiveIntensity = snowMix * 0.35 * snowLit;
+  riceMat.emissiveIntensity = snowMix * 0.12 * snowLit;
 
   const snowOn = snowMix > 0.002;
   snowGround.visible = snowOn;
   snowMounds.visible = snowOn;
   snowPoints.visible = snowOn;
+  fieldSnow.visible = snowOn;
   snowCapMat.opacity = snowMix * 0.9;
+  snowTips.visible = snowOn;
   if (snowOn) {
     snowMat.opacity = snowMix * 0.95;
     moundMat.opacity = snowMix * 0.9;
     flakeMat.opacity = snowMix * 0.85;
+    fieldSnowMat.opacity = snowMix * 0.95;
+    fieldSnowMat.emissiveIntensity = 0.22 * snowLit;
+    snowTipMat.opacity = snowMix * 0.85;
+    snowTipMat.emissiveIntensity = 0.2 * snowLit;
   }
 
   if (rainAmount > 0.01) {
@@ -2592,6 +2743,7 @@ function frame() {
   updateTimeWeather(dt);
 
   for (const s of sheepList) updateSheep(s, dt, time);
+  updateFootprints(dt);
 
   for (const c of clouds) {
     c.position.x += 0.12 * dt;
@@ -2648,6 +2800,7 @@ window.__meadow = {
   get freeze() { return freeze; },
   setTime: v => { timeOfDay = clamp(v, 0, 24); },
   setWeather: setWeather,
+  spawnFootprint: spawnFootprint,
   setSnow: v => { snowAmount = clamp(v, 0, 1); },
   setRain: v => { rainAmount = clamp(v, 0, 1); },
   setFreeze: v => { freeze = clamp(v, 0, 1); },

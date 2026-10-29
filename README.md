@@ -4,6 +4,10 @@
 >
 > A single-file three.js meadow diorama with an editable flock, random wind, flowing water and a ripe rice paddy.
 
+## 预览 / Preview
+
+![草原绵羊编辑器 · Meadow Sheep Editor](preview.png)
+
 ## 这是什么 / What it is
 
 一个用 **three.js 0.160** 写的交互式微缩草原场景，全部内容放在一个 **index.html** 里，双击即开。画面是手绘纸艺/软陶质感的圆角草皮岛：11 只黑脸绵羊、一棵紫色树、一条会流动的河、一条土路、一块成熟稻田，以及会随机起风的天空。

@@ -4,6 +4,10 @@
 >
 > A single-file three.js meadow diorama with an editable flock, random wind, flowing water and a ripe rice paddy.
 
+## 在线试玩 / Live demo
+
+**https://onestar1107.github.io/meadow-sheep-editor/**
+
 ## 预览 / Preview
 
 ![草原绵羊编辑器 · Meadow Sheep Editor](preview.png)

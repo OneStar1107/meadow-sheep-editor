@@ -1,8 +1,8 @@
 # 草原绵羊编辑器 · Meadow Sheep Editor
 
-> 单文件 three.js 立体草原：可编辑的羊群、随机风场、流动河水、成熟稻田，以及 24 小时昼夜与晴/雨天气。
+> 单文件 three.js 立体草原：可编辑的羊群、随机风场、流动河水、成熟稻田，以及 24 小时昼夜、晴/雨/雪天气与雨雪带来的湿润、积雪和结冰。
 >
-> A single-file three.js meadow diorama with an editable flock, random wind, flowing water, a ripe rice paddy, a 24-hour day/night cycle and sunny/rainy weather.
+> A single-file three.js meadow diorama with an editable flock, random wind, flowing water, a ripe rice paddy, a 24-hour day/night cycle and sunny/rainy/snowy weather with wetness, snow cover and a freezing river.
 
 ## 在线试玩 / Live demo
 
@@ -14,9 +14,9 @@
 
 ## 这是什么 / What it is
 
-一个用 **three.js 0.160** 写的交互式微缩草原场景，全部内容放在一个 **index.html** 里，双击即开。画面是手绘纸艺/软陶质感的圆角草皮岛：11 只黑脸绵羊、一棵紫色树、一条会流动的河、一条土路、一块成熟稻田，以及会随机起风的天空，还有 24 小时昼夜循环和晴天/雨天切换。
+一个用 **three.js 0.160** 写的交互式微缩草原场景，全部内容放在一个 **index.html** 里，双击即开。画面是手绘纸艺/软陶质感的圆角草皮岛：11 只黑脸绵羊、一棵紫色树、一条会流动的河、一条土路、一块成熟稻田，以及会随机起风的天空，还有 24 小时昼夜循环、晴天/雨天/雪天切换，以及雨天湿润和雪天积雪、河流结冰。
 
-An interactive miniature meadow built with **three.js 0.160**, shipped as one **index.html** you can open by double-clicking. A hand-painted, paper-diorama style turf island with 11 black-faced sheep, a purple tree, a flowing river, a dirt path, a ripe rice paddy, a randomly gusting sky, a 24-hour day/night cycle, and sunny/rainy weather.
+An interactive miniature meadow built with **three.js 0.160**, shipped as one **index.html** you can open by double-clicking. A hand-painted, paper-diorama style turf island with 11 black-faced sheep, a purple tree, a flowing river, a dirt path, a ripe rice paddy, a randomly gusting sky, a 24-hour day/night cycle, and sunny/rainy/snowy weather with wetness, snow cover and a freezing river.
 
 ## 运行 / Run
 
@@ -40,7 +40,7 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 | 工具栏 | 待机 / 吃草 / 行走 / 跳跃 · 撤销 / 重做 / 复制 / 删除 |
 | Ctrl/Cmd + Z | 撤销；加 Shift 为重做 |
 | 右上角时间滑杆 | 拖动切换 0–24 点；时间自动前进，约 8 分钟走完一天 |
-| 右上角 晴 / 雨 | 切换晴天与雨天：光照、天空、云层和雨丝同步过渡 |
+| 右上角 晴 / 雨 / 雪 | 切换晴天、雨天和雪天：光照、天空、云层、雨丝/雪花、湿润与积雪同步过渡 |
 
 ## 场景里有什么 / What's inside
 
@@ -51,7 +51,9 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 - **稻田**：低矮田埂 + 约 3200 株实例化稻丛；每株 8 片绿叶 + 3 个交叉 ribbon 稻穗，稻穗向上拱起再下垂；顶点色分层（叶绿、穗琥珀金），随风摆动。羊的漫游目标会避开稻田。
 - **树与云**：8 棵树（其中一棵紫色）、3 块石头、3 朵云；树冠和树干在风中的响应不同。
 - **光照**：暖色平行光 + 半球光 + ACES 色调映射 + VSM 软阴影 + 页面暖色暗角；太阳随 24 小时沿东→西弧线移动。
-- **时间与天气**：24 小时循环；日出/日落暖色、夜间月光与深蓝天空；右上角可拖时间、切晴/雨。雨天有约 2200 条随风倾斜的雨丝、灰蓝天空、压暗的阴天光照和一层很淡的雨雾。
+- **时间与天气**：24 小时循环；日出/日落暖色、夜间月光与深蓝天空。右上角半透明面板可拖时间、切晴/雨/雪；面板底色实时取自当前天空色，文字明暗随之切换。
+- **雨天**：约 2200 条随风倾斜的雨丝、深灰云层、压暗光照和一层雨雾；地面、树、羊和稻田变暗变湿，草地/路面带一点湿光。
+- **雪天**：雪花飘落，雪层逐渐加厚，树顶积雪，稻田和路面转白；河流随积雪慢慢结冰，雪停后冰面缓慢融化。
 - **界面**：全部简体中文；选中标签显示“宽 × 高 米 · 距离 米”。
 
 ## 风、水、稻田 / Wind, water, rice
@@ -62,7 +64,12 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 
 **时间**从 08:00 开始，约 8 分钟走完一天（可在右上角滑杆拖到任意时刻）。太阳位置、光色、强度、天空底色、云色和曝光都由同一套时间关键帧插值：清晨偏桃色、白天奶油色、黄昏橘粉、夜晚深蓝并用冷色月光；页面文字在夜间自动切浅色。
 
-**天气**分晴天和雨天。雨天约 2 秒过渡：太阳压暗、天空转灰蓝、云层变灰、雨丝出现并被风斜吹，同时叠一层很淡的雨雾；切回晴天时反向过渡。
+**天气**分晴、雨、雪三种，约 2 秒平滑过渡。
+
+- **雨天**：太阳压暗、天空灰蓝、云层转深灰，约 2200 条雨丝随风斜落并叠一层雨雾；雨水让草地、树、羊、稻田和路面变暗、变湿，草地和路面的粗糙度降低，带一点湿光。
+- **雪天**：雪花飘落；岛上覆盖一层逐渐加厚的雪，树冠顶部积雪，稻田和路面转白；河流的冻结程度慢慢升高，水面变成带冰纹的淡蓝白，雪停后缓慢融化。
+
+右上角控制面板是半透明的：底色直接取当前天空色（约 40% 不透明度）并做背景模糊，文字在深色天空下自动转浅，因此昼夜和晴/雨/雪变化时面板会跟着背景一起变。
 
 ## 代码结构 / How it works
 
@@ -80,14 +87,14 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 - 9 · behaviour：待机 / 吃草 / 行走 / 跳跃状态机
 - 10 · selection UI + history：8 个控制点、尺寸标签、工具栏、撤销/重做/复制/删除
 - 11 · picking：拾取、拖动、圈选生成、轨道控制切换
-- 12 · time of day / weather：24 小时关键帧、太阳/天空/云/水色、雨丝与雨雾
+- 12 · time of day / weather：24 小时关键帧、太阳/天空/云/水色、雨丝与雨雾、雪层/雪花/结冰、湿润与自适应 HUD
 - 13 · loop：风场、昼夜与天气更新、树/稻/水 uniform、渲染循环
 
 关键实现：Canvas 程序化纹理；岛屿 mask 通过 onBeforeCompile 注入到草地/河流/道路 shader；稻丛用 InstancedMesh + onBeforeCompile 风摆；屏幕空间 AABB 做选择框；射线与地面求交做拖动和圈选；圈选用 shoelace 面积 + 点在多边形内判断。
 
 ## 文件 / Files
 
-- index.html — 全部场景、样式与逻辑（约 84 KB）
+- index.html — 全部场景、样式与逻辑（约 96 KB）
 - docs/PROMPT.zh.md — 中文 AI 复刻提示词
 - docs/PROMPT.en.md — English AI prompt
 - .gitignore — 忽略本地记忆库与测试产物
@@ -103,7 +110,7 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 
 - 需要联网从 unpkg 载入 three.js；离线打开会显示中文兜底提示。
 - 需要支持 WebGL2 的浏览器；移动端可打开，但手势与性能未专门优化。
-- 单文件约 84 KB，所有纹理都是运行时 Canvas 生成，没有外部图片/模型资源。
+- 单文件约 96 KB，所有纹理都是运行时 Canvas 生成，没有外部图片/模型资源。
 - 羊的尺寸标签是世界空间 AABB，会随羊的朝向略有变化。
 - 未附加开源许可证；如需 MIT 等许可证，请仓库作者补充 LICENSE。
 

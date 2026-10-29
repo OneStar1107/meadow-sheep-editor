@@ -66,12 +66,13 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - The sun travels on an east-to-west arc. Dawn is peach, day is cream, dusk is orange-pink, night is deep blue with cool moonlight. Sky color, cloud color, exposure, and water tint follow the same time curve; page text turns light at night.
 - Rain: dim the sun, turn the sky grey-blue, darken the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; grass, trees, sheep, the paddy and the road darken and look wet, with lower roughness on grass and road.
 - Snow: falling flakes; a snow layer thickens across the island, caps the tree crowns, and turns the paddy and road pale; the river freezes gradually into pale blue-white ice with frost lines and thaws slowly after the snow stops.
+- Randomize the weather (sunny/rain/snow) on every page load. Show a sun in the daytime sky and a moon at night, moving along a time arc and fading in bad weather. Feather the riverbank and path edges so they blend naturally across weather states.
 - Sunny/rain/snow transition smoothly over about 2 seconds; all visible UI copy stays Simplified Chinese.
 
 ## Hoofprints & default walking
 
 - On page open every sheep starts in walk. Clicking a sheep starts it walking, and a lasso-spawned sheep also starts walking.
-- While walking on snow (enough cover) or wet ground (enough wetness), a sheep leaves alternating hoofprints at a fixed stride; snow prints are blue-grey, wet prints are dark, and they fade after about ten seconds. Prints sit on terrainH and must not sink through the ground.
+- While walking on snow (enough cover) or wet ground (enough wetness), a sheep leaves alternating hoofprints at about a 0.8m stride; snow prints are blue-grey, wet prints are dark. They fade in about 6–8 seconds and disappear within 1–2 seconds after switching to sunny. Prints sit on terrainH and must not sink through the ground.
 - Snow on the paddy must look natural: snow sits on the field surface and the panicles, white caps cover the panicle tips, and leaves/stems still show through; it must not become a flat, detail-free white slab.
 
 ## Acceptance
@@ -81,7 +82,7 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - Clicking a sheep shows 8 handles, the label, and the toolbar; dragging the box moves the sheep; clicking empty space deselects; lasso spawns a new sheep without overlap; undo/redo/duplicate/delete all work.
 - Jump apex is about 0.62 m world space, duration about 0.82 s, landing back in idle.
 - In light wind the trunk angle stays 0 while canopies move; only strong wind tilts trunks; rice and water react to wind.
-- Dragging the time slider shows dawn, dusk, and night; sunny/rain/snow switch smoothly; rain shows streaks and wetness, snow shows cover/tree caps/frozen river and detailed paddy snow; page-open/selected/lasso-spawned sheep default to walking and leave hoofprints on snow/wet ground; the panel follows the sky color.
+- Dragging the time slider shows dawn, dusk, and night; sunny/rain/snow switch smoothly; rain shows streaks and wetness, snow shows cover/tree caps/frozen river and detailed paddy snow; the sun appears by day and the moon at night, weather randomizes on every load; page-open/selected/lasso-spawned sheep default to walking and leave short-lived hoofprints on snow/wet ground; river/path edges are feathered; the panel follows the sky color.
 - All UI copy is Simplified Chinese.
 
 ## Output

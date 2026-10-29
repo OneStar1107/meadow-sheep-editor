@@ -59,6 +59,14 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - Tree yaw is random; transform the world wind direction into each tree's local space before applying the rotation.
 - River, rice, and trees share the same wind so direction and feel stay consistent.
 
+## Time & weather
+
+- Add a fixed Chinese time/weather panel in the top-right: a 24-hour clock, phase label (dawn/day/dusk/night), a 0–24 time slider, and sunny/rain buttons.
+- Start at 08:00 and complete a day in about 8 minutes; dragging the slider jumps to any time.
+- The sun travels on an east-to-west arc. Dawn is peach, day is cream, dusk is orange-pink, night is deep blue with cool moonlight. Sky color, cloud color, exposure, and water tint follow the same time curve; page text turns light at night.
+- Rain: dim the sun, turn the sky grey-blue, grey the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; transition smoothly over about 2 seconds and reverse when switching back.
+- All visible UI copy stays Simplified Chinese.
+
 ## Acceptance
 
 - Double-click index.html opens directly; zero console errors; the page needs internet.
@@ -66,6 +74,7 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - Clicking a sheep shows 8 handles, the label, and the toolbar; dragging the box moves the sheep; clicking empty space deselects; lasso spawns a new sheep without overlap; undo/redo/duplicate/delete all work.
 - Jump apex is about 0.62 m world space, duration about 0.82 s, landing back in idle.
 - In light wind the trunk angle stays 0 while canopies move; only strong wind tilts trunks; rice and water react to wind.
+- Dragging the time slider shows dawn, dusk, and night; switching sunny/rain transitions smoothly with visible rain; interactions still work.
 - All UI copy is Simplified Chinese.
 
 ## Output

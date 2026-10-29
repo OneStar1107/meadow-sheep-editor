@@ -103,6 +103,10 @@
       radial-gradient(52% 44% at 26% 16%, rgba(255,247,220,.28), rgba(255,247,220,0) 70%);
   }
 
+  #skyBodies{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;}
+  .sky-body{position:absolute;width:150px;height:150px;border-radius:50%;transform:translate(-50%,-50%);opacity:0;will-change:left,top,opacity;}
+  #sunBody{background:radial-gradient(circle at 50% 50%, #FFFDF4 0 16%, #FFEDB8 28%, rgba(255,196,110,.45) 52%, rgba(255,170,80,0) 72%);}
+  #moonBody{width:92px;height:92px;background:radial-gradient(circle at 50% 50%, #FFFFFF 0 22%, #EAF3FF 40%, rgba(190,214,240,.35) 62%, rgba(170,200,230,0) 78%);}
   #rainVeil{
     position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;
     background:linear-gradient(180deg, rgba(120,145,165,.30), rgba(70,90,110,.10) 45%, rgba(40,60,80,.32));
@@ -133,6 +137,7 @@
 <canvas id="lasso"></canvas>
 <div id="vignette"></div>
 <div id="rainVeil"></div>
+<div id="skyBodies"><div id="sunBody" class="sky-body"></div><div id="moonBody" class="sky-body"></div></div>
 
 <div id="overlay">
   <div id="box"></div>
@@ -201,6 +206,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a || 1), 0, 1); return t * t * (3 - 2 * t); };
 const dmp = (dt, k) => 1 - Math.exp(-k * dt);
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const angleLerp = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
@@ -764,15 +770,15 @@ function ribbon(points, width, opts) {
     mat.transparent = true;
     mat.onBeforeCompile = shader => {
       shader.uniforms.uMask = { value: islandMaskTex };
-      shader.vertexShader = 'attribute vec2 aMaskUv;\nvarying vec2 vMaskUv;\n' + shader.vertexShader;
+      shader.vertexShader = 'attribute vec2 uv;\nattribute vec2 aMaskUv;\nvarying vec2 vMaskUv;\nvarying vec2 vRibbonUv;\n' + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\n  vMaskUv = aMaskUv;'
+        '#include <begin_vertex>\n  vMaskUv = aMaskUv;\n  vRibbonUv = uv;'
       );
-      shader.fragmentShader = 'uniform sampler2D uMask;\nvarying vec2 vMaskUv;\n' + shader.fragmentShader;
+      shader.fragmentShader = 'uniform sampler2D uMask;\nvarying vec2 vMaskUv;\nvarying vec2 vRibbonUv;\n' + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <alphamap_fragment>',
-        '#include <alphamap_fragment>\n  diffuseColor.a *= texture2D(uMask, vMaskUv).a;'
+        '#include <alphamap_fragment>\n  diffuseColor.a *= texture2D(uMask, vMaskUv).a;\n  diffuseColor.a *= smoothstep(0.0, 0.16, vRibbonUv.x) * (1.0 - smoothstep(0.84, 1.0, vRibbonUv.x));'
       );
     };
   }
@@ -886,7 +892,8 @@ const waterMat = new THREE.ShaderMaterial({
     '  float iceN = noise(vec2(f.x * 5.0 + 2.1, f.y * 16.0));',
     '  col = mix(col, uIce, uFreeze * (0.55 + 0.3 * smoothstep(0.35, 0.7, iceN)));',
     '  col = mix(col, vec3(1.0), smoothstep(0.78, 0.95, iceN) * uFreeze * 0.25);',
-    '  float alpha = (0.97 + foam * 0.03) * maskA;',
+    '  float edgeFade = smoothstep(0.0, 0.12, vUv.x) * (1.0 - smoothstep(0.88, 1.0, vUv.x));',
+    '  float alpha = (0.97 + foam * 0.03) * maskA * edgeFade;',
     '  gl_FragColor = vec4(col, alpha);',
     '  #include <tonemapping_fragment>',
     '  #include <colorspace_fragment>',
@@ -1544,16 +1551,18 @@ function spawnFootprint(x, z, heading) {
   p.base = onSnow ? 0.72 : 0.62;
   p.mesh.material.opacity = p.base;
   p.mesh.visible = true;
-  p.life = p.max = onSnow ? 24 : 14;
+  p.life = p.max = onSnow ? 8 : 6;
   p.snow = onSnow;
+  p.cleared = false;
 }
 function updateFootprints(dt) {
   for (const p of footprintPool) {
     if (!p.mesh.visible) continue;
     p.life -= dt;
-    if (p.snow && snowAmount < 0.12) p.life = Math.min(p.life, 0.4);
-    if (!p.snow && wetness < 0.08) p.life = Math.min(p.life, 0.4);
-    p.mesh.material.opacity = p.base * clamp(p.life / 3, 0, 1);
+    if ((p.snow && snowAmount < 0.15) || (!p.snow && rainAmount < 0.15)) {
+      if (!p.cleared) { p.cleared = true; p.life = Math.min(p.life, 1.2); }
+    }
+    p.mesh.material.opacity = p.base * clamp(p.life / (p.cleared ? 1.2 : 2), 0, 1);
     if (p.life <= 0) p.mesh.visible = false;
   }
 }
@@ -1785,7 +1794,7 @@ function updateSheep(s, dt, now) {
         } else {
           s.position.set(nx, terrainH(nx, nz), nz);
           u.stepDist += 1.15 * dt;
-          if (u.stepDist > 0.6) {
+          if (u.stepDist > 0.8) {
             u.stepDist = 0;
             u.stepSide = u.stepSide ? 0 : 1;
             const side = u.stepSide ? 1 : -1;
@@ -2507,6 +2516,8 @@ const wSunny = document.getElementById('w-sunny');
 const wRain = document.getElementById('w-rain');
 const wSnow = document.getElementById('w-snow');
 const rainVeilEl = document.getElementById('rainVeil');
+const sunBody = document.getElementById('sunBody');
+const moonBody = document.getElementById('moonBody');
 
 function phaseName(t) {
   if (t >= 5 && t < 7) return '清晨';
@@ -2530,6 +2541,13 @@ window.addEventListener('pointercancel', () => { scrubbing = false; });
 wSunny.addEventListener('click', () => setWeather(0));
 wRain.addEventListener('click', () => setWeather(1));
 wSnow.addEventListener('click', () => setWeather(2));
+
+const initialWeather = Math.floor(Math.random() * 3);
+setWeather(initialWeather);
+rainAmount = initialWeather === 1 ? 1 : 0;
+snowAmount = initialWeather === 2 ? 1 : 0;
+wetness = rainAmount;
+freeze = snowAmount;
 
 function envSample(t) {
   let i = 0;
@@ -2599,6 +2617,18 @@ function updateTimeWeather(dt) {
   hemi.intensity = hemiI;
   ambient.intensity = ambI;
   renderer.toneMappingExposure = 1.06 - (1 - sunUp) * 0.06 - rainMix * 0.12 - snowMix * 0.06;
+
+  const dayMask = sstep(5.6, 7.2, t) * (1 - sstep(16.8, 18.8, t));
+  const dayT = clamp((t - 6) / 12, 0, 1);
+  const sunAng = dayT * Math.PI;
+  sunBody.style.left = (50 + Math.cos(sunAng) * 38).toFixed(2) + '%';
+  sunBody.style.top = (14 - Math.sin(sunAng) * 8).toFixed(2) + '%';
+  sunBody.style.opacity = (dayMask * (1 - rainMix * 0.7) * (1 - snowMix * 0.35)).toFixed(3);
+  const nightT = t >= 18 ? t - 18 : t + 6;
+  const moonAng = (nightT / 12) * Math.PI;
+  moonBody.style.left = (50 + Math.cos(moonAng) * 36).toFixed(2) + '%';
+  moonBody.style.top = (14 - Math.sin(moonAng) * 7).toFixed(2) + '%';
+  moonBody.style.opacity = ((1 - dayMask) * 0.95 * (1 - rainMix * 0.5) * (1 - snowMix * 0.3)).toFixed(3);
 
   cCloudEm.copy(cCloud).lerp(WHITE, 0.45);
   cloudWhite.color.copy(cCloud);

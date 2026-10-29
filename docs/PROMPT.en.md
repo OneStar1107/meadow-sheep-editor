@@ -61,11 +61,12 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 
 ## Time & weather
 
-- Add a fixed Chinese time/weather panel in the top-right: a 24-hour clock, phase label (dawn/day/dusk/night), a 0–24 time slider, and sunny/rain buttons.
+- Add a fixed Chinese time/weather panel in the top-right: a 24-hour clock, phase label (dawn/day/dusk/night), a 0–24 time slider, and sunny/rain/snow buttons. The panel is semi-transparent: its background is sampled from the current sky color (about 40% opacity) with a backdrop blur, and text turns light on dark skies.
 - Start at 08:00 and complete a day in about 8 minutes; dragging the slider jumps to any time.
 - The sun travels on an east-to-west arc. Dawn is peach, day is cream, dusk is orange-pink, night is deep blue with cool moonlight. Sky color, cloud color, exposure, and water tint follow the same time curve; page text turns light at night.
-- Rain: dim the sun, turn the sky grey-blue, grey the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; transition smoothly over about 2 seconds and reverse when switching back.
-- All visible UI copy stays Simplified Chinese.
+- Rain: dim the sun, turn the sky grey-blue, darken the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; grass, trees, sheep, the paddy and the road darken and look wet, with lower roughness on grass and road.
+- Snow: falling flakes; a snow layer thickens across the island, caps the tree crowns, and turns the paddy and road pale; the river freezes gradually into pale blue-white ice with frost lines and thaws slowly after the snow stops.
+- Sunny/rain/snow transition smoothly over about 2 seconds; all visible UI copy stays Simplified Chinese.
 
 ## Acceptance
 
@@ -74,7 +75,7 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - Clicking a sheep shows 8 handles, the label, and the toolbar; dragging the box moves the sheep; clicking empty space deselects; lasso spawns a new sheep without overlap; undo/redo/duplicate/delete all work.
 - Jump apex is about 0.62 m world space, duration about 0.82 s, landing back in idle.
 - In light wind the trunk angle stays 0 while canopies move; only strong wind tilts trunks; rice and water react to wind.
-- Dragging the time slider shows dawn, dusk, and night; switching sunny/rain transitions smoothly with visible rain; interactions still work.
+- Dragging the time slider shows dawn, dusk, and night; sunny/rain/snow switch smoothly; rain shows streaks and wetness, snow shows cover/tree caps/frozen river; the panel follows the sky color.
 - All UI copy is Simplified Chinese.
 
 ## Output

@@ -103,10 +103,6 @@
       radial-gradient(52% 44% at 26% 16%, rgba(255,247,220,.28), rgba(255,247,220,0) 70%);
   }
 
-  #skyBodies{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;}
-  .sky-body{position:absolute;width:150px;height:150px;border-radius:50%;transform:translate(-50%,-50%);opacity:0;will-change:left,top,opacity;}
-  #sunBody{background:radial-gradient(circle at 50% 50%, #FFFDF4 0 16%, #FFEDB8 28%, rgba(255,196,110,.45) 52%, rgba(255,170,80,0) 72%);}
-  #moonBody{width:92px;height:92px;background:radial-gradient(circle at 50% 50%, #FFFFFF 0 22%, #EAF3FF 40%, rgba(190,214,240,.35) 62%, rgba(170,200,230,0) 78%);}
   #rainVeil{
     position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;
     background:linear-gradient(180deg, rgba(120,145,165,.30), rgba(70,90,110,.10) 45%, rgba(40,60,80,.32));
@@ -137,7 +133,6 @@
 <canvas id="lasso"></canvas>
 <div id="vignette"></div>
 <div id="rainVeil"></div>
-<div id="skyBodies"><div id="sunBody" class="sky-body"></div><div id="moonBody" class="sky-body"></div></div>
 
 <div id="overlay">
   <div id="box"></div>
@@ -312,7 +307,13 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(BG);
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = 1280;
+bgCanvas.height = 720;
+const bgCtx = bgCanvas.getContext('2d');
+const bgTex = new THREE.CanvasTexture(bgCanvas);
+bgTex.colorSpace = THREE.SRGBColorSpace;
+scene.background = bgTex;
 
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 400);
 camera.position.set(0, 52.5, 34.5);
@@ -2503,6 +2504,7 @@ const SNOW_WATER = new THREE.Color(0xCFE0EA), SNOW_WOOL = new THREE.Color(0xF2F7
 
 let timeOfDay = 8.0;
 let weatherTarget = 0;
+let bgTimer = 0;
 let rainAmount = 0;
 let snowAmount = 0;
 let wetness = 0;
@@ -2516,8 +2518,6 @@ const wSunny = document.getElementById('w-sunny');
 const wRain = document.getElementById('w-rain');
 const wSnow = document.getElementById('w-snow');
 const rainVeilEl = document.getElementById('rainVeil');
-const sunBody = document.getElementById('sunBody');
-const moonBody = document.getElementById('moonBody');
 
 function phaseName(t) {
   if (t >= 5 && t < 7) return '清晨';
@@ -2555,6 +2555,55 @@ function envSample(t) {
   const A = ENV_KEYS[i], B = ENV_KEYS[i + 1];
   const f = clamp((t - A.t) / Math.max(0.0001, B.t - A.t), 0, 1);
   return { A, B, f };
+}
+
+function drawSkyBackground(t, rainMix, snowMix) {
+  const w = bgCanvas.width, h = bgCanvas.height;
+  const top = '#' + cSky.getHexString();
+  const bottom = '#' + cSky.clone().multiplyScalar(0.96).getHexString();
+  const grad = bgCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bottom);
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0, 0, w, h);
+
+  const dayMask = sstep(5.6, 7.2, t) * (1 - sstep(16.8, 18.8, t));
+  const dayT = clamp((t - 6) / 12, 0, 1);
+  const sunAng = dayT * Math.PI;
+  const sunOp = dayMask * (1 - rainMix) * (1 - snowMix * 0.25);
+  if (sunOp > 0.01) {
+    const x = w * (0.5 + Math.cos(sunAng) * 0.38);
+    const y = h * (0.22 - Math.sin(sunAng) * 0.07);
+    const R = Math.min(w, h) * 0.10;
+    const rg = bgCtx.createRadialGradient(x, y, 0, x, y, R * 1.9);
+    rg.addColorStop(0, 'rgba(255,255,246,' + sunOp + ')');
+    rg.addColorStop(0.26, 'rgba(255,244,205,' + (sunOp * 0.95) + ')');
+    rg.addColorStop(0.58, 'rgba(255,205,120,' + (sunOp * 0.35) + ')');
+    rg.addColorStop(1, 'rgba(255,180,90,0)');
+    bgCtx.fillStyle = rg;
+    bgCtx.beginPath();
+    bgCtx.arc(x, y, R * 1.9, 0, TAU);
+    bgCtx.fill();
+  }
+
+  const nightT = t >= 18 ? t - 18 : t + 6;
+  const moonAng = (nightT / 12) * Math.PI;
+  const moonOp = (1 - dayMask) * 0.95 * (1 - rainMix) * (1 - snowMix * 0.35);
+  if (moonOp > 0.01) {
+    const x = w * (0.5 + Math.cos(moonAng) * 0.36);
+    const y = h * (0.22 - Math.sin(moonAng) * 0.06);
+    const R = Math.min(w, h) * 0.058;
+    const rg = bgCtx.createRadialGradient(x, y, 0, x, y, R * 1.8);
+    rg.addColorStop(0, 'rgba(255,255,255,' + moonOp + ')');
+    rg.addColorStop(0.26, 'rgba(240,247,255,' + (moonOp * 0.98) + ')');
+    rg.addColorStop(0.48, 'rgba(206,224,242,' + (moonOp * 0.8) + ')');
+    rg.addColorStop(1, 'rgba(180,205,235,0)');
+    bgCtx.fillStyle = rg;
+    bgCtx.beginPath();
+    bgCtx.arc(x, y, R * 1.8, 0, TAU);
+    bgCtx.fill();
+  }
+  bgTex.needsUpdate = true;
 }
 
 function updateTimeWeather(dt) {
@@ -2603,7 +2652,8 @@ function updateTimeWeather(dt) {
   hemiI *= (1 - snowMix * 0.15);
   ambI = lerp(ambI, 0.32, snowMix * 0.3);
 
-  scene.background.copy(cSky);
+  bgTimer -= dt;
+  if (bgTimer <= 0) { bgTimer = 0.1; drawSkyBackground(t, rainMix, snowMix); }
   sun.color.copy(cSun);
   sun.intensity = sunI;
   if (t >= 6 && t <= 18) {
@@ -2618,17 +2668,7 @@ function updateTimeWeather(dt) {
   ambient.intensity = ambI;
   renderer.toneMappingExposure = 1.06 - (1 - sunUp) * 0.06 - rainMix * 0.12 - snowMix * 0.06;
 
-  const dayMask = sstep(5.6, 7.2, t) * (1 - sstep(16.8, 18.8, t));
-  const dayT = clamp((t - 6) / 12, 0, 1);
-  const sunAng = dayT * Math.PI;
-  sunBody.style.left = (50 + Math.cos(sunAng) * 38).toFixed(2) + '%';
-  sunBody.style.top = (14 - Math.sin(sunAng) * 8).toFixed(2) + '%';
-  sunBody.style.opacity = (dayMask * (1 - rainMix) * (1 - snowMix * 0.25)).toFixed(3);
-  const nightT = t >= 18 ? t - 18 : t + 6;
-  const moonAng = (nightT / 12) * Math.PI;
-  moonBody.style.left = (50 + Math.cos(moonAng) * 36).toFixed(2) + '%';
-  moonBody.style.top = (14 - Math.sin(moonAng) * 7).toFixed(2) + '%';
-  moonBody.style.opacity = ((1 - dayMask) * 0.95 * (1 - rainMix) * (1 - snowMix * 0.35)).toFixed(3);
+
 
   cCloudEm.copy(cCloud).lerp(WHITE, 0.45);
   cloudWhite.color.copy(cCloud);

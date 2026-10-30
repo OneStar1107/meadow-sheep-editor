@@ -1568,6 +1568,48 @@ function updateFootprints(dt) {
   }
 }
 
+/* ---- sun & moon inside the diorama container ---- */
+function makeSunTexture() {
+  const S = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const g = cv.getContext('2d');
+  const grad = g.createRadialGradient(S / 2, S / 2, 2, S / 2, S / 2, S / 2);
+  grad.addColorStop(0, 'rgba(255,255,246,1)');
+  grad.addColorStop(0.22, 'rgba(255,255,240,1)');
+  grad.addColorStop(0.40, 'rgba(255,226,160,0.95)');
+  grad.addColorStop(0.64, 'rgba(255,190,110,0.35)');
+  grad.addColorStop(1, 'rgba(255,170,80,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, S, S);
+  return new THREE.CanvasTexture(cv);
+}
+function makeMoonTexture() {
+  const S = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const g = cv.getContext('2d');
+  const grad = g.createRadialGradient(S / 2, S / 2, 2, S / 2, S / 2, S / 2);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.26, 'rgba(248,252,255,1)');
+  grad.addColorStop(0.42, 'rgba(220,235,250,0.95)');
+  grad.addColorStop(0.64, 'rgba(190,214,240,0.3)');
+  grad.addColorStop(1, 'rgba(170,200,230,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, S, S);
+  return new THREE.CanvasTexture(cv);
+}
+const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: makeSunTexture(), color: 0xFFFFFF, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending,
+}));
+sunSprite.scale.set(3.2, 3.2, 1);
+scene.add(sunSprite);
+const moonSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: makeMoonTexture(), color: 0xFFFFFF, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending,
+}));
+moonSprite.scale.set(2.2, 2.2, 1);
+scene.add(moonSprite);
+
 /* ============================================================
    8 · sheep
    ============================================================ */
@@ -2566,43 +2608,6 @@ function drawSkyBackground(t, rainMix, snowMix) {
   grad.addColorStop(1, bottom);
   bgCtx.fillStyle = grad;
   bgCtx.fillRect(0, 0, w, h);
-
-  const dayMask = sstep(5.6, 7.2, t) * (1 - sstep(16.8, 18.8, t));
-  const dayT = clamp((t - 6) / 12, 0, 1);
-  const sunAng = dayT * Math.PI;
-  const sunOp = dayMask * (1 - rainMix) * (1 - snowMix * 0.25);
-  if (sunOp > 0.01) {
-    const x = w * (0.5 + Math.cos(sunAng) * 0.38);
-    const y = h * (0.22 - Math.sin(sunAng) * 0.07);
-    const R = Math.min(w, h) * 0.10;
-    const rg = bgCtx.createRadialGradient(x, y, 0, x, y, R * 1.9);
-    rg.addColorStop(0, 'rgba(255,255,246,' + sunOp + ')');
-    rg.addColorStop(0.26, 'rgba(255,244,205,' + (sunOp * 0.95) + ')');
-    rg.addColorStop(0.58, 'rgba(255,205,120,' + (sunOp * 0.35) + ')');
-    rg.addColorStop(1, 'rgba(255,180,90,0)');
-    bgCtx.fillStyle = rg;
-    bgCtx.beginPath();
-    bgCtx.arc(x, y, R * 1.9, 0, TAU);
-    bgCtx.fill();
-  }
-
-  const nightT = t >= 18 ? t - 18 : t + 6;
-  const moonAng = (nightT / 12) * Math.PI;
-  const moonOp = (1 - dayMask) * 0.95 * (1 - rainMix) * (1 - snowMix * 0.35);
-  if (moonOp > 0.01) {
-    const x = w * (0.5 + Math.cos(moonAng) * 0.36);
-    const y = h * (0.22 - Math.sin(moonAng) * 0.06);
-    const R = Math.min(w, h) * 0.058;
-    const rg = bgCtx.createRadialGradient(x, y, 0, x, y, R * 1.8);
-    rg.addColorStop(0, 'rgba(255,255,255,' + moonOp + ')');
-    rg.addColorStop(0.26, 'rgba(240,247,255,' + (moonOp * 0.98) + ')');
-    rg.addColorStop(0.48, 'rgba(206,224,242,' + (moonOp * 0.8) + ')');
-    rg.addColorStop(1, 'rgba(180,205,235,0)');
-    bgCtx.fillStyle = rg;
-    bgCtx.beginPath();
-    bgCtx.arc(x, y, R * 1.8, 0, TAU);
-    bgCtx.fill();
-  }
   bgTex.needsUpdate = true;
 }
 
@@ -2652,6 +2657,17 @@ function updateTimeWeather(dt) {
   hemiI *= (1 - snowMix * 0.15);
   ambI = lerp(ambI, 0.32, snowMix * 0.3);
 
+  const dayMask = sstep(5.6, 7.2, t) * (1 - sstep(16.8, 18.8, t));
+  const dayT = clamp((t - 6) / 12, 0, 1);
+  const sunAng = dayT * Math.PI;
+  sunSprite.position.set(Math.cos(sunAng) * 10, 0.6 + Math.sin(sunAng) * 0.9, -16);
+  sunSprite.material.opacity = dayMask * (1 - rainMix) * (1 - snowMix * 0.25);
+  sunSprite.visible = sunSprite.material.opacity > 0.01;
+  const nightT = t >= 18 ? t - 18 : t + 6;
+  const moonAng = (nightT / 12) * Math.PI;
+  moonSprite.position.set(Math.cos(moonAng) * 9, 0.6 + Math.sin(moonAng) * 0.8, -17);
+  moonSprite.material.opacity = (1 - dayMask) * 0.95 * (1 - rainMix) * (1 - snowMix * 0.35);
+  moonSprite.visible = moonSprite.material.opacity > 0.01;
   bgTimer -= dt;
   if (bgTimer <= 0) { bgTimer = 0.1; drawSkyBackground(t, rainMix, snowMix); }
   sun.color.copy(cSun);

@@ -2623,12 +2623,12 @@ function updateTimeWeather(dt) {
   const sunAng = dayT * Math.PI;
   sunBody.style.left = (50 + Math.cos(sunAng) * 38).toFixed(2) + '%';
   sunBody.style.top = (14 - Math.sin(sunAng) * 8).toFixed(2) + '%';
-  sunBody.style.opacity = (dayMask * (1 - rainMix * 0.7) * (1 - snowMix * 0.35)).toFixed(3);
+  sunBody.style.opacity = (dayMask * (1 - rainMix) * (1 - snowMix * 0.25)).toFixed(3);
   const nightT = t >= 18 ? t - 18 : t + 6;
   const moonAng = (nightT / 12) * Math.PI;
   moonBody.style.left = (50 + Math.cos(moonAng) * 36).toFixed(2) + '%';
   moonBody.style.top = (14 - Math.sin(moonAng) * 7).toFixed(2) + '%';
-  moonBody.style.opacity = ((1 - dayMask) * 0.95 * (1 - rainMix * 0.5) * (1 - snowMix * 0.3)).toFixed(3);
+  moonBody.style.opacity = ((1 - dayMask) * 0.95 * (1 - rainMix) * (1 - snowMix * 0.35)).toFixed(3);
 
   cCloudEm.copy(cCloud).lerp(WHITE, 0.45);
   cloudWhite.color.copy(cCloud);

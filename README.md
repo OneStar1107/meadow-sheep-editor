@@ -104,10 +104,11 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 
 ## 文件 / Files
 
-- index.html — 全部场景、样式与逻辑（约 104 KB）
+- index.html — 全部场景、样式与逻辑（约 105 KB）
 - docs/PROMPT.zh.md — 中文 AI 复刻提示词
 - docs/PROMPT.en.md — English AI prompt
 - .gitignore — 忽略本地记忆库与测试产物
+- preview.png — 1440×900 的页面预览图（README 顶部与仓库预览使用）
 
 ## AI 提示词 / AI prompts
 
@@ -120,7 +121,7 @@ An interactive miniature meadow built with **three.js 0.160**, shipped as one **
 
 - 需要联网从 unpkg 载入 three.js；离线打开会显示中文兜底提示。
 - 需要支持 WebGL2 的浏览器；移动端可打开，但手势与性能未专门优化。
-- 单文件约 104 KB，所有纹理都是运行时 Canvas 生成，没有外部图片/模型资源。
+- 单文件约 105 KB，所有纹理都是运行时 Canvas 生成，没有外部图片/模型资源。
 - 羊的尺寸标签是世界空间 AABB，会随羊的朝向略有变化。
 - 未附加开源许可证；如需 MIT 等许可证，请仓库作者补充 LICENSE。
 

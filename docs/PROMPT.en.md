@@ -64,9 +64,9 @@ You are a frontend engineer who is excellent at three.js and stylized scenes. Bu
 - Add a fixed Chinese time/weather panel in the top-right: a 24-hour clock, phase label (dawn/day/dusk/night), a 0–24 time slider, and sunny/rain/snow buttons. The panel is semi-transparent: its background is sampled from the current sky color (about 40% opacity) with a backdrop blur, and text turns light on dark skies.
 - Start at 08:00 and complete a day in about 8 minutes; dragging the slider jumps to any time.
 - The sun travels on an east-to-west arc. Dawn is peach, day is cream, dusk is orange-pink, night is deep blue with cool moonlight. Sky color, cloud color, exposure, and water tint follow the same time curve; page text turns light at night.
-- Rain: dim the sun, turn the sky grey-blue, darken the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; grass, trees, sheep, the paddy and the road darken and look wet, with lower roughness on grass and road.
+- Rain: hide the sun and moon, turn the sky grey-blue, darken the clouds, add about 2200 wind-slanted rain streaks and a faint rain haze; grass, trees, sheep, the paddy and the road darken and look wet, with lower roughness on grass and road.
 - Snow: falling flakes; a snow layer thickens across the island, caps the tree crowns, and turns the paddy and road pale; the river freezes gradually into pale blue-white ice with frost lines and thaws slowly after the snow stops.
-- Randomize the weather (sunny/rain/snow) on every page load. Show a sun in the daytime sky and a moon at night, moving along a time arc and fading in bad weather. Feather the riverbank and path edges so they blend naturally across weather states.
+- Randomize the weather (sunny/rain/snow) on every page load. Show a sun in the daytime sky and a moon at night, moving along a time arc. They are fixed screen-space sky overlays and do not move with the camera. Rain fully hides both; snow dims them. Feather the riverbank and path edges so they blend naturally across weather states.
 - Sunny/rain/snow transition smoothly over about 2 seconds; all visible UI copy stays Simplified Chinese.
 
 ## Hoofprints & default walking
